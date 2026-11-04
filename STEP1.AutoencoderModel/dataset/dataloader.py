@@ -26,7 +26,7 @@ import numpy as np
 import torch
 from typing import IO, TYPE_CHECKING, Any, Callable, Dict, Hashable, List, Mapping, Optional, Sequence, Tuple, Union
 
-sys.path.append("..") 
+sys.path.append("..")
 
 from torch.utils.data import Subset
 
@@ -39,14 +39,16 @@ from monai.transforms.io.array import LoadImage, SaveImage
 from monai.utils import GridSamplePadMode, ensure_tuple, ensure_tuple_rep
 from monai.data.image_reader import ImageReader
 from monai.utils.enums import PostFix
+
 DEFAULT_POST_FIX = PostFix.meta()
+
 
 class UniformDataset(Dataset):
     def __init__(self, data, transform, datasetkey):
         super().__init__(data=data, transform=transform)
         self.dataset_split(data, datasetkey)
         self.datasetkey = datasetkey
-    
+
     def dataset_split(self, data, datasetkey):
         self.data_dic = {}
         for key in datasetkey:
@@ -54,17 +56,17 @@ class UniformDataset(Dataset):
         for img in data:
             key = get_key(img['name'])
             self.data_dic[key].append(img)
-        
+
         self.datasetnum = []
         for key, item in self.data_dic.items():
             assert len(item) != 0, f'the dataset {key} has no data'
             self.datasetnum.append(len(item))
         self.datasetlen = len(datasetkey)
-    
+
     def _transform(self, set_key, data_index):
         data_i = self.data_dic[set_key][data_index]
         return apply_transform(self.transform, data_i) if self.transform is not None else data_i
-    
+
     def __getitem__(self, index):
         ## the index generated outside is only used to select the dataset
         ## the corresponding data in each dataset is selelcted by the np.random.randint function
@@ -79,7 +81,7 @@ class UniformCacheDataset(CacheDataset):
         super().__init__(data=data, transform=transform, cache_rate=cache_rate)
         self.datasetkey = datasetkey
         self.data_statis()
-    
+
     def data_statis(self):
         data_num_dic = {}
         for key in self.datasetkey:
@@ -92,9 +94,9 @@ class UniformCacheDataset(CacheDataset):
         for key, item in data_num_dic.items():
             assert item != 0, f'the dataset {key} has no data'
             self.data_num.append(item)
-        
+
         self.datasetlen = len(self.datasetkey)
-    
+
     def index_uniform(self, index):
         ## the index generated outside is only used to select the dataset
         ## the corresponding data in each dataset is selelcted by the np.random.randint function
@@ -106,21 +108,23 @@ class UniformCacheDataset(CacheDataset):
     def __getitem__(self, index):
         post_index = self.index_uniform(index)
         return self._transform(post_index)
+
+
 class LoadImaged_BodyMap(MapTransform):
     def __init__(
-        self,
-        keys: KeysCollection,
-        reader: Optional[Union[ImageReader, str]] = None,
-        dtype: DtypeLike = np.float32,
-        meta_keys: Optional[KeysCollection] = None,
-        meta_key_postfix: str = DEFAULT_POST_FIX,
-        overwriting: bool = False,
-        image_only: bool = False,
-        ensure_channel_first: bool = False,
-        simple_keys: bool = False,
-        allow_missing_keys: bool = False,
-        *args,
-        **kwargs,
+            self,
+            keys: KeysCollection,
+            reader: Optional[Union[ImageReader, str]] = None,
+            dtype: DtypeLike = np.float32,
+            meta_keys: Optional[KeysCollection] = None,
+            meta_key_postfix: str = DEFAULT_POST_FIX,
+            overwriting: bool = False,
+            image_only: bool = False,
+            ensure_channel_first: bool = False,
+            simple_keys: bool = False,
+            allow_missing_keys: bool = False,
+            *args,
+            **kwargs,
     ) -> None:
         super().__init__(keys, allow_missing_keys)
         self._loader = LoadImage(reader, image_only, dtype, ensure_channel_first, simple_keys, *args, **kwargs)
@@ -132,10 +136,8 @@ class LoadImaged_BodyMap(MapTransform):
         self.meta_key_postfix = ensure_tuple_rep(meta_key_postfix, len(self.keys))
         self.overwriting = overwriting
 
-
     def register(self, reader: ImageReader):
         self._loader.register(reader)
-
 
     def __call__(self, data, reader: Optional[ImageReader] = None):
         d = dict(data)
@@ -158,12 +160,12 @@ class LoadImaged_BodyMap(MapTransform):
                     raise KeyError(f"Metadata with key {meta_key} already exists and overwriting=False.")
                 d[meta_key] = data[1]
         d['label'], d['label_meta_dict'] = self.label_transfer(d['label'], d['image'].shape)
-        
+
         return d
 
     def label_transfer(self, lbl_dir, shape):
         organ_lbl = np.zeros(shape)
-        
+
         if os.path.exists(lbl_dir + 'liver' + '.nii.gz'):
             array, mata_infomation = self._loader(lbl_dir + 'liver' + '.nii.gz')
             organ_lbl[array > 0] = 1
@@ -188,21 +190,22 @@ class LoadImaged_BodyMap(MapTransform):
 
         return organ_lbl, mata_infomation
 
+
 class LoadImageh5d(MapTransform):
     def __init__(
-        self,
-        keys: KeysCollection,
-        reader: Optional[Union[ImageReader, str]] = None,
-        dtype: DtypeLike = np.float32,
-        meta_keys: Optional[KeysCollection] = None,
-        meta_key_postfix: str = DEFAULT_POST_FIX,
-        overwriting: bool = False,
-        image_only: bool = False,
-        ensure_channel_first: bool = False,
-        simple_keys: bool = False,
-        allow_missing_keys: bool = False,
-        *args,
-        **kwargs,
+            self,
+            keys: KeysCollection,
+            reader: Optional[Union[ImageReader, str]] = None,
+            dtype: DtypeLike = np.float32,
+            meta_keys: Optional[KeysCollection] = None,
+            meta_key_postfix: str = DEFAULT_POST_FIX,
+            overwriting: bool = False,
+            image_only: bool = False,
+            ensure_channel_first: bool = False,
+            simple_keys: bool = False,
+            allow_missing_keys: bool = False,
+            *args,
+            **kwargs,
     ) -> None:
         super().__init__(keys, allow_missing_keys)
         self._loader = LoadImage(reader, image_only, dtype, ensure_channel_first, simple_keys, *args, **kwargs)
@@ -214,10 +217,8 @@ class LoadImageh5d(MapTransform):
         self.meta_key_postfix = ensure_tuple_rep(meta_key_postfix, len(self.keys))
         self.overwriting = overwriting
 
-
     def register(self, reader: ImageReader):
         self._loader.register(reader)
-
 
     def __call__(self, data, reader: Optional[ImageReader] = None):
         d = dict(data)
@@ -238,7 +239,8 @@ class LoadImageh5d(MapTransform):
                 d[meta_key] = data[1]
 
         return d
-    
+
+
 def get_loader(args):
     train_transforms = Compose(
         [
@@ -249,7 +251,7 @@ def get_loader(args):
                 keys=["image", "label"],
                 pixdim=(args.space_x, args.space_y, args.space_z),
                 mode=("bilinear", "nearest"),
-            ), # process h5 to here
+            ),  # process h5 to here
             ScaleIntensityRanged(
                 keys=["image"],
                 a_min=args.a_min,
@@ -258,11 +260,12 @@ def get_loader(args):
                 b_max=args.b_max,
                 clip=True,
             ),
-            SpatialPadd(keys=["image", "label"], spatial_size=(args.roi_x, args.roi_y, args.roi_z), mode=["minimum", "constant"]),
+            SpatialPadd(keys=["image", "label"], spatial_size=(args.roi_x, args.roi_y, args.roi_z),
+                        mode=["minimum", "constant"]),
             RandCropByPosNegLabeld(
                 keys=["image", "label"],
                 label_key="label",
-                spatial_size=(args.roi_x, args.roi_y, args.roi_z), 
+                spatial_size=(args.roi_x, args.roi_y, args.roi_z),
                 pos=20,
                 neg=1,
                 num_samples=args.num_samples,
@@ -287,7 +290,7 @@ def get_loader(args):
                 keys=["image", "label"],
                 pixdim=(args.space_x, args.space_y, args.space_z),
                 mode=("bilinear", "nearest"),
-            ), 
+            ),
             ScaleIntensityRanged(
                 keys=["image"],
                 a_min=args.a_min,
@@ -311,57 +314,62 @@ def get_loader(args):
         ]
     )
 
-    if args.phase == 'train':        
-        train_img=[]
-        train_lbl=[]
-        train_name=[]
-        for line in open(os.path.join(args.data_txt_path,  args.dataset_list+'.txt')):
+    if args.phase == 'train':
+        train_img = []
+        train_lbl = []
+        train_name = []
+        for line in open(os.path.join(args.data_txt_path, args.dataset_list + '.txt')):
             name = line.strip().split('\t')[0]
             train_img.append(os.path.join(args.data_root_path, name + '/ct.nii.gz'))
             train_lbl.append(os.path.join(args.data_root_path, name + '/segmentations/'))
             train_name.append(name)
         data_dicts_train = [{'image': image, 'label': label, 'name': name}
-                    for image, label, name in zip(train_img, train_lbl, train_name)]
+                            for image, label, name in zip(train_img, train_lbl, train_name)]
         print('train len {}'.format(len(data_dicts_train)))
         # data_dicts_train=data_dicts_train[:10]
         # breakpoint()
-    
+
         if args.cache_dataset:
             if args.uniform_sample:
-                train_dataset = UniformCacheDataset(data=data_dicts_train, transform=train_transforms, cache_rate=args.cache_rate, datasetkey=args.datasetkey)
+                train_dataset = UniformCacheDataset(data=data_dicts_train, transform=train_transforms,
+                                                    cache_rate=args.cache_rate, datasetkey=args.datasetkey)
             else:
-                train_dataset = CacheDataset(data=data_dicts_train, transform=train_transforms, cache_rate=args.cache_rate)
+                train_dataset = CacheDataset(data=data_dicts_train, transform=train_transforms,
+                                             cache_rate=args.cache_rate)
         else:
             if args.uniform_sample:
-                train_dataset = UniformDataset(data=data_dicts_train, transform=train_transforms, datasetkey=args.datasetkey)
+                train_dataset = UniformDataset(data=data_dicts_train, transform=train_transforms,
+                                               datasetkey=args.datasetkey)
             else:
                 train_dataset = Dataset(data=data_dicts_train, transform=train_transforms)
-        train_sampler = DistributedSampler(dataset=train_dataset, even_divisible=True, shuffle=True) if args.dist else None
-        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None), num_workers=args.num_workers, 
-                                    collate_fn=list_data_collate, sampler=train_sampler)
-        return train_loader, train_sampler, len(train_dataset)    
-    
+        train_sampler = DistributedSampler(dataset=train_dataset, even_divisible=True,
+                                           shuffle=True) if args.dist else None
+        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
+                                  num_workers=args.num_workers,
+                                  collate_fn=list_data_collate, sampler=train_sampler)
+        return train_loader, train_sampler, len(train_dataset)
+
     if args.phase == 'validation':
         val_img = []
         val_lbl = []
         val_name = []
         for item in args.dataset_list:
-            for line in open(os.path.join(args.data_txt_path,  item, 'real_tumor_val_0.txt')):
+            for line in open(os.path.join(args.data_txt_path, item, 'real_tumor_val_0.txt')):
                 name = line.strip().split()[1].split('.')[0]
                 val_img.append(os.path.join(args.data_root_path, line.strip().split()[0]))
                 val_lbl.append(os.path.join(args.data_root_path, line.strip().split()[1]))
                 val_name.append(name)
         data_dicts_val = [{'image': image, 'label': label, 'name': name}
-                    for image, label, name in zip(val_img, val_lbl, val_name)]
+                          for image, label, name in zip(val_img, val_lbl, val_name)]
         print('val len {}'.format(len(data_dicts_val)))
-    
+
         if args.cache_dataset:
             val_dataset = CacheDataset(data=data_dicts_val, transform=val_transforms, cache_rate=args.cache_rate)
         else:
             val_dataset = Dataset(data=data_dicts_val, transform=val_transforms)
         val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False, num_workers=4, collate_fn=list_data_collate)
         return val_loader, val_transforms, len(val_dataset)
-    
+
 
 def get_key(name):
     ## input: name
@@ -372,6 +380,7 @@ def get_key(name):
     else:
         template_key = name[0:2]
     return template_key
+
 
 if __name__ == "__main__":
     train_loader, test_loader = partial_label_dataloader()

@@ -35,3 +35,17 @@ logs/
 env/
 venv/
 ENV/
+
+# Model weights (keep them out of git; download from HuggingFace)
+*.pt
+*.pth
+*.ckpt
+
+# Medical volumes / generated NIfTI outputs
+*.nii
+*.nii.gz
+
+# Local experiment outputs
+STEP3.SegmentationModel/kidney_medium_batch/
+STEP3.SegmentationModel/kidney/
+STEP3.SegmentationModel/pretrained_segmentation/
