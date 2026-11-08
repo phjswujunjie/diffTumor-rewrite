@@ -1,0 +1,40 @@
+vqgan_ckpt: 'AutoencoderModel.ckpt'
+
+# 与 ddpm.yaml 完全相同的潜空间/骨干参数
+diffusion_img_size: 24
+diffusion_depth_size: 24
+diffusion_num_channels: 17
+out_dim: 8
+dim_mults: [1,2,4,8]
+
+# 与 ddpm 分开存放，避免覆盖对照实验的 checkpoint
+results_folder: checkpoints/flowmatching/
+results_folder_postfix: 'fold0_tumor_early_96_t4_fm'
+load_milestone: False
+
+batch_size: 2 # 40
+num_workers: 20
+save_and_sample_every: 1000
+denoising_fn: Unet3D
+train_lr: 1e-4
+
+# FM：timesteps 同时决定时间嵌入范围 [0, T-1]
+timesteps: 4 # number of steps
+loss_type: l1 # L1 or L2
+
+# --- Flow Matching 特有 ---
+# continuous: t ~ U[0,1)
+# discrete  : t = k/(T-1)，与 DDPM 的 T 个时间级严格对齐（消融用）
+time_sampling: continuous
+# 采样积分步数；默认与 timesteps 相同，保证与 DDPM 同等 NFE
+sampling_steps: 4
+# euler_midpoint: 区间中点求速度（推荐）
+# euler         : 区间左端点求速度（第一步会落在 t=1）
+ode_solver: euler_midpoint
+
+train_num_steps: 60000 # total training steps
+gradient_accumulate_every: 2 # gradient accumulation steps
+ema_decay: 0.995 # exponential moving average decay
+amp: False # turn on mixed precision
+num_sample_rows: 1
+gpus: 0

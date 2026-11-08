@@ -1,5 +1,7 @@
 name: liver_tumor_train
 image_channels: 1
+# Shared seed for DDPM / Flow Matching controlled experiments
+seed: 1234
 fold: 0
 dataset_list: ['liver_tumor_data_early_fold']
 data_root_path: /mnt/ccvl15/zzhou82/PublicAbdominalData/

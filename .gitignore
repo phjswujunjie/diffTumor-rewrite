@@ -49,3 +49,16 @@ ENV/
 STEP3.SegmentationModel/kidney_medium_batch/
 STEP3.SegmentationModel/kidney/
 STEP3.SegmentationModel/pretrained_segmentation/
+
+# Training checkpoints / tensorboard events
+checkpoints/
+# Hydra run directories
+STEP2.DiffusionModel/outputs/
+
+# Flow Matching 对照实验产物（只保留代码和文档）
+*.npz
+events.out.tfevents*
+STEP2.DiffusionModel/flowmatching/texture_study/crops/
+STEP2.DiffusionModel/flowmatching/texture_study/outputs*/
+STEP3.SegmentationModel/flowmatching/cache_persistent/
+STEP3.SegmentationModel/flowmatching/runs_author/

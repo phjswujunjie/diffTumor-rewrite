@@ -2,6 +2,7 @@ from re import I
 import sys, os
 sys.path.append(os.getcwd())
 from ddpm import Unet3D, GaussianDiffusion, Trainer
+from seed_utils import set_seed
 import hydra
 from omegaconf import DictConfig, OmegaConf, open_dict
 import torch
@@ -11,6 +12,9 @@ from dataset.dataloader import get_loader
 
 @hydra.main(config_path='config', config_name='base_cfg', version_base=None)
 def run(cfg: DictConfig):
+    # 与 flowmatching/train.py 使用同一个 dataset.seed，保证对照实验公平。
+    seed = set_seed(cfg.dataset.get('seed', 1234))
+    print(f'[seed] {seed}')
     torch.cuda.set_device(cfg.model.gpus)
     with open_dict(cfg):
         cfg.model.results_folder = os.path.join(
@@ -36,8 +40,10 @@ def run(cfg: DictConfig):
         loss_type=cfg.model.loss_type,
     ).cuda()
 
-    train_dataloader, train_sampler, dataset_size = get_loader(cfg.dataset)
-    val_dataloader=None
+    # Re-seed after model init so data transforms see the same RNG state for
+    # both DDPM and Flow Matching; the loader also has its own seeded generator.
+    set_seed(seed)
+    train_dataloader, _, _ = get_loader(cfg.dataset)
 
     trainer = Trainer(
         diffusion,

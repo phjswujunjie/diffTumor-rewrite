@@ -31,6 +31,7 @@ import time
 import warnings
 from copy import copy, deepcopy
 import h5py, os
+import random
 
 
 import numpy as np
@@ -222,6 +223,13 @@ class Compose_Select(Compose):
             input_ = apply_transform(_transform, input_, self.map_items, self.unpack_items, self.log_stats)
         return input_
 
+def _seed_worker(worker_id):
+    """Deterministically seed NumPy / Python RNG in each DataLoader worker."""
+    worker_seed = torch.initial_seed() % (2 ** 32)
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
+
+
 def get_loader(args):
     train_transforms = Compose(
         [
@@ -355,9 +363,14 @@ def get_loader(args):
             else:
                 train_dataset = Dataset(data=data_dicts_train, transform=train_transforms)
         train_sampler = DistributedSampler(dataset=train_dataset, even_divisible=True, shuffle=True) if args.dist else None
-        # breakpoint()
-        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None), num_workers=args.num_workers, 
-                                    collate_fn=list_data_collate, sampler=train_sampler)
+        # Keep the shuffle order independent of model-side RNG consumption, so
+        # DDPM and Flow Matching see exactly the same batches when seeded alike.
+        seed = int(getattr(args, 'seed', 1234))
+        generator = torch.Generator()
+        generator.manual_seed(seed)
+        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None), num_workers=args.num_workers,
+                                    collate_fn=list_data_collate, sampler=train_sampler,
+                                    generator=generator, worker_init_fn=_seed_worker)
         return train_loader, train_sampler, len(train_dataset)
         # return train_loader
     
